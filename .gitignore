@@ -1,0 +1,28 @@
+# Segredos e ambiente local — nunca enviar ao GitHub
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
