@@ -14,6 +14,10 @@ class ChatMessageRequest(BaseModel):
         description="Matéria ou disciplina selecionada",
         examples=["Programação"],
     )
+    session_id: str | None = Field(
+        default=None,
+        description="Identificador único da sessão de estudo existente (opcional)",
+    )
 
 
 class ChatMessageResponse(BaseModel):
@@ -27,3 +31,8 @@ class ChatMessageResponse(BaseModel):
         default="demo",
         description="Identificação do provedor da resposta (ex.: 'gemini' ou 'demo')",
     )
+    session_id: str = Field(
+        ...,
+        description="Identificador único da sessão onde a mensagem foi gravada",
+    )
+

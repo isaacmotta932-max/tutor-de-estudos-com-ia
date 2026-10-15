@@ -1,4 +1,4 @@
-import type { ChatApiResponse, HealthResponse, Subject } from '../types'
+import type { ChatApiResponse, HealthResponse, SessionDetail, SessionSummary, Subject } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
@@ -34,7 +34,57 @@ export async function fetchSubjects(): Promise<Subject[]> {
   }
 }
 
-export async function sendChatMessage(message: string, subject: string): Promise<ChatApiResponse> {
+export async function fetchSessions(): Promise<SessionSummary[]> {
+  const url = `${API_BASE_URL}/api/sessions`
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Falha ao carregar histórico de sessões (status ${response.status})`)
+    }
+    return (await response.json()) as SessionSummary[]
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Não foi possível carregar o histórico de estudos: backend offline.')
+    }
+    throw error
+  }
+}
+
+export async function fetchSessionDetail(sessionId: string): Promise<SessionDetail> {
+  const url = `${API_BASE_URL}/api/sessions/${sessionId}`
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Não foi possível carregar a conversa (status ${response.status})`)
+  }
+  return (await response.json()) as SessionDetail
+}
+
+export async function createSession(subject: string, title?: string): Promise<SessionSummary> {
+  const url = `${API_BASE_URL}/api/sessions`
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject, title }),
+  })
+  if (!response.ok) {
+    throw new Error(`Falha ao criar nova sessão (status ${response.status})`)
+  }
+  return (await response.json()) as SessionSummary
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  const url = `${API_BASE_URL}/api/sessions/${sessionId}`
+  const response = await fetch(url, { method: 'DELETE' })
+  if (!response.ok) {
+    throw new Error(`Falha ao excluir sessão (status ${response.status})`)
+  }
+}
+
+export async function sendChatMessage(
+  message: string,
+  subject: string,
+  sessionId?: string | null,
+): Promise<ChatApiResponse> {
   const url = `${API_BASE_URL}/api/chat`
   try {
     const response = await fetch(url, {
@@ -45,6 +95,7 @@ export async function sendChatMessage(message: string, subject: string): Promise
       body: JSON.stringify({
         message,
         subject,
+        session_id: sessionId || undefined,
       }),
     })
 

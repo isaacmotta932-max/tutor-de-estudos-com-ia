@@ -13,6 +13,11 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+*.db
+*.sqlite
+*.sqlite3
+data/
+backend/data/
 
 # Node / frontend
 node_modules/

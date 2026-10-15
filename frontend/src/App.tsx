@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import type { ChatMessage, Subject } from './types'
-import { checkBackendHealth, fetchSubjects, sendChatMessage } from './services/api'
+import type { ChatMessage, SessionSummary, Subject } from './types'
+import {
+  checkBackendHealth,
+  deleteSession,
+  fetchSessionDetail,
+  fetchSessions,
+  fetchSubjects,
+  sendChatMessage,
+} from './services/api'
 import { Header } from './components/Header'
 import { SubjectSelector } from './components/SubjectSelector'
 import { ChatMessageBubble } from './components/ChatMessageBubble'
@@ -8,6 +15,7 @@ import { WelcomePrompt } from './components/WelcomePrompt'
 import { ChatInput } from './components/ChatInput'
 import { LoadingIndicator } from './components/LoadingIndicator'
 import { ErrorAlert } from './components/ErrorAlert'
+import { SessionsSidebar } from './components/SessionsSidebar'
 import './App.css'
 
 const FALLBACK_SUBJECTS: Subject[] = [
@@ -60,6 +68,11 @@ export function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isDemoMode, setIsDemoMode] = useState<boolean>(true)
 
+  // Estados de persistência SQLite
+  const [sessions, setSessions] = useState<SessionSummary[]>([])
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Rolagem suave até a última mensagem
@@ -71,7 +84,17 @@ export function App() {
     scrollToBottom()
   }, [messages, isLoading])
 
-  // Verificação inicial de saúde do backend e carregamento de matérias
+  // Carrega lista de sessões do backend
+  const loadSessions = async () => {
+    try {
+      const data = await fetchSessions()
+      setSessions(data)
+    } catch {
+      // Ignora erro silencioso de listagem se offline
+    }
+  }
+
+  // Verificação inicial de saúde do backend, carregamento de matérias e sessões
   const testConnection = async () => {
     setIsCheckingHealth(true)
     try {
@@ -88,6 +111,9 @@ export function App() {
       } catch {
         // Mantém as matérias locais de fallback se a rota falhar
       }
+
+      // Carrega histórico de sessões salvas no SQLite
+      await loadSessions()
     } catch (err: unknown) {
       setBackendConnected(false)
       const msg = err instanceof Error ? err.message : 'Backend offline'
@@ -100,6 +126,59 @@ export function App() {
   useEffect(() => {
     testConnection()
   }, [])
+
+  // Seleciona e carrega uma sessão existente do banco de dados
+  const handleSelectSession = async (sessionId: string) => {
+    try {
+      setIsLoading(true)
+      setErrorMessage(null)
+      const detail = await fetchSessionDetail(sessionId)
+
+      const convertedMessages: ChatMessage[] = detail.messages.map((m) => ({
+        id: m.id,
+        sender: m.sender,
+        text: m.text,
+        timestamp: m.timestamp,
+        subject: m.subject,
+        isDemo: m.is_demo,
+        provider: m.provider,
+      }))
+
+      setMessages(convertedMessages)
+      setSelectedSubject(detail.subject)
+      setCurrentSessionId(detail.id)
+      setIsSidebarOpen(false)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha ao carregar a conversa.'
+      setErrorMessage(msg)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Inicia uma nova conversa limpa
+  const handleNewSession = () => {
+    setMessages([])
+    setCurrentSessionId(null)
+    setErrorMessage(null)
+    setIsSidebarOpen(false)
+  }
+
+  // Exclui uma sessão do banco SQLite
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      await deleteSession(sessionId)
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId))
+
+      if (currentSessionId === sessionId) {
+        setMessages([])
+        setCurrentSessionId(null)
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha ao excluir a sessão.'
+      setErrorMessage(msg)
+    }
+  }
 
   const handleSend = async (customText?: string) => {
     const textToSend = (customText ?? input).trim()
@@ -122,7 +201,7 @@ export function App() {
     setErrorMessage(null)
 
     try {
-      const response = await sendChatMessage(textToSend, selectedSubject)
+      const response = await sendChatMessage(textToSend, selectedSubject, currentSessionId)
 
       const tutorMsg: ChatMessage = {
         id: `tutor-${Date.now()}`,
@@ -137,6 +216,12 @@ export function App() {
       setMessages((prev) => [...prev, tutorMsg])
       setIsDemoMode(response.is_demo)
       setBackendConnected(true)
+
+      // Atualiza o session_id ativo e sincroniza a lista de sessões salvas
+      if (response.session_id) {
+        setCurrentSessionId(response.session_id)
+        await loadSessions()
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha desconhecida na comunicação.'
       setErrorMessage(msg)
@@ -146,20 +231,28 @@ export function App() {
     }
   }
 
-  const handleClearChat = () => {
-    if (window.confirm('Deseja limpar todo o histórico desta conversa?')) {
-      setMessages([])
-      setErrorMessage(null)
-    }
-  }
+  const currentSession = sessions.find((s) => s.id === currentSessionId)
 
   return (
     <div className="app-container">
+      <SessionsSidebar
+        sessions={sessions}
+        currentSessionId={currentSessionId}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onSelectSession={handleSelectSession}
+        onNewSession={handleNewSession}
+        onDeleteSession={handleDeleteSession}
+      />
+
       <Header
         backendConnected={backendConnected}
         isCheckingHealth={isCheckingHealth}
         onRetryConnection={testConnection}
         isDemoMode={isDemoMode}
+        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+        isSidebarOpen={isSidebarOpen}
+        sessionCount={sessions.length}
       />
 
       <main className="main-content">
@@ -179,21 +272,43 @@ export function App() {
         <div className="chat-window-wrapper">
           <div className="chat-toolbar">
             <span className="chat-toolbar-info">
-              Conversando sobre: <strong>{selectedSubject}</strong> ({messages.length}{' '}
-              {messages.length === 1 ? 'mensagem' : 'mensagens'})
+              {currentSession ? (
+                <>
+                  Conversa: <strong>{currentSession.title}</strong> &bull; Matéria:{' '}
+                  <strong>{selectedSubject}</strong> ({messages.length}{' '}
+                  {messages.length === 1 ? 'mensagem' : 'mensagens'})
+                </>
+              ) : (
+                <>
+                  Nova conversa sobre: <strong>{selectedSubject}</strong> ({messages.length}{' '}
+                  {messages.length === 1 ? 'mensagem' : 'mensagens'})
+                </>
+              )}
             </span>
 
-            {messages.length > 0 && (
+            <div className="chat-toolbar-actions">
               <button
                 type="button"
-                className="clear-chat-btn"
-                onClick={handleClearChat}
-                disabled={isLoading}
-                title="Limpar mensagens da tela"
+                className="new-chat-toolbar-btn"
+                onClick={handleNewSession}
+                disabled={isLoading && messages.length === 0}
+                title="Começar uma nova conversa de estudos"
               >
-                🗑️ Limpar conversa
+                ✨ Nova conversa
               </button>
-            )}
+
+              {messages.length > 0 && (
+                <button
+                  type="button"
+                  className="clear-chat-btn"
+                  onClick={handleNewSession}
+                  disabled={isLoading}
+                  title="Limpar mensagens da tela e iniciar nova"
+                >
+                  🗑️ Limpar
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="messages-scroll-area">

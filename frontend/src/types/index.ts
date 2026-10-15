@@ -20,6 +20,35 @@ export interface ChatApiResponse {
   subject: string
   is_demo: boolean
   provider: string
+  session_id: string
+}
+
+export interface SessionSummary {
+  id: string
+  title: string
+  subject: string
+  created_at: string
+  updated_at: string
+  message_count: number
+}
+
+export interface SessionDetail {
+  id: string
+  title: string
+  subject: string
+  created_at: string
+  updated_at: string
+  messages: Array<{
+    id: string
+    session_id: string
+    sender: 'user' | 'tutor'
+    text: string
+    timestamp: string
+    subject: string
+    is_demo: boolean
+    provider: string
+    created_at: string
+  }>
 }
 
 export interface HealthResponse {

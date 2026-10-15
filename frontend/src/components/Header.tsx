@@ -5,6 +5,9 @@ interface HeaderProps {
   isCheckingHealth: boolean
   onRetryConnection: () => void
   isDemoMode: boolean
+  onToggleSidebar?: () => void
+  isSidebarOpen?: boolean
+  sessionCount?: number
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -12,10 +15,25 @@ export const Header: React.FC<HeaderProps> = ({
   isCheckingHealth,
   onRetryConnection,
   isDemoMode,
+  onToggleSidebar,
+  isSidebarOpen,
+  sessionCount = 0,
 }) => {
   return (
     <header className="app-header">
       <div className="header-brand">
+        {onToggleSidebar && (
+          <button
+            type="button"
+            className={`sidebar-toggle-btn ${isSidebarOpen ? 'active' : ''}`}
+            onClick={onToggleSidebar}
+            title={isSidebarOpen ? 'Fechar histórico de estudos' : 'Abrir histórico de estudos'}
+            aria-label="Alternar histórico de estudos"
+          >
+            📚
+            {sessionCount > 0 && <span className="toggle-count-badge">{sessionCount}</span>}
+          </button>
+        )}
         <div className="header-logo" aria-hidden="true">
           🎓
         </div>

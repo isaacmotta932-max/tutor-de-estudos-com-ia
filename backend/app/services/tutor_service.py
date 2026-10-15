@@ -24,7 +24,7 @@ class TutorService:
     def provider(self) -> BaseAIProvider:
         return self._provider
 
-    async def answer(self, question: str, subject: str) -> ChatMessageResponse:
+    async def answer(self, question: str, subject: str, session_id: str = "") -> ChatMessageResponse:
         reply_text = await self._provider.generate_tutor_response(
             question=question,
             subject=subject,
@@ -35,4 +35,6 @@ class TutorService:
             subject=subject,
             is_demo=self._provider.is_demo,
             provider=self._provider.provider_name,
+            session_id=session_id,
         )
+

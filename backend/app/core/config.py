@@ -21,6 +21,8 @@ class Settings:
         ).split(",")
         if origin.strip()
     ]
+    DATABASE_PATH: Path = Path(os.getenv("DATABASE_PATH", str(BASE_DIR / "data" / "tutor.db")))
+
 
 
 settings = Settings()

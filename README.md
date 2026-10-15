@@ -156,7 +156,7 @@ Para ativar as respostas didáticas geradas pela IA do Google:
 
 ## 🗺️ Próximos Passos Planejados
 
-- [ ] Persistência de histórico de conversas no banco de dados SQLite.
+- [x] Persistência de histórico de conversas no banco de dados SQLite (Sessões e Mensagens).
 - [ ] Módulo de geração de exercícios com correção interativa.
 - [ ] Exportação de resumo dos estudos em Markdown ou texto simples.
 - [ ] Acompanhamento de progresso de estudo por disciplina.
