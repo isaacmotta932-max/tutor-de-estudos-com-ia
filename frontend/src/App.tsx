@@ -17,6 +17,7 @@ import { LoadingIndicator } from './components/LoadingIndicator'
 import { ErrorAlert } from './components/ErrorAlert'
 import { SessionsSidebar } from './components/SessionsSidebar'
 import { ExerciseModule } from './components/ExerciseModule'
+import { exportNotesAsMarkdown, exportNotesAsTxt } from './utils/exportNotes'
 import './App.css'
 
 const FALLBACK_SUBJECTS: Subject[] = [
@@ -321,15 +322,49 @@ export function App() {
                 </button>
 
                 {messages.length > 0 && (
-                  <button
-                    type="button"
-                    className="clear-chat-btn"
-                    onClick={handleNewSession}
-                    disabled={isLoading}
-                    title="Limpar mensagens da tela e iniciar nova"
-                  >
-                    🗑️ Limpar
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className="export-toolbar-btn"
+                      onClick={() =>
+                        exportNotesAsMarkdown(
+                          currentSession?.title || `Estudos de ${selectedSubject}`,
+                          selectedSubject,
+                          messages
+                        )
+                      }
+                      disabled={isLoading}
+                      title="Baixar caderno de estudos formatado em Markdown (.md)"
+                    >
+                      📄 Baixar .MD
+                    </button>
+
+                    <button
+                      type="button"
+                      className="export-toolbar-btn"
+                      onClick={() =>
+                        exportNotesAsTxt(
+                          currentSession?.title || `Estudos de ${selectedSubject}`,
+                          selectedSubject,
+                          messages
+                        )
+                      }
+                      disabled={isLoading}
+                      title="Baixar caderno de estudos em texto puro (.txt)"
+                    >
+                      📝 Baixar .TXT
+                    </button>
+
+                    <button
+                      type="button"
+                      className="clear-chat-btn"
+                      onClick={handleNewSession}
+                      disabled={isLoading}
+                      title="Limpar mensagens da tela e iniciar nova"
+                    >
+                      🗑️ Limpar
+                    </button>
+                  </>
                 )}
               </div>
             </div>

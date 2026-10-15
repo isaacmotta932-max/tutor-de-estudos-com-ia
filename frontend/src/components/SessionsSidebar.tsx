@@ -120,15 +120,27 @@ export function SessionsSidebar({
                     <span className="session-msg-count">
                       {sess.message_count} {sess.message_count === 1 ? 'mensagem' : 'mensagens'}
                     </span>
-                    <button
-                      type="button"
-                      className="session-delete-btn"
-                      onClick={(e) => handleDelete(e, sess.id, sess.title)}
-                      title="Excluir conversa"
-                      aria-label={`Excluir conversa ${sess.title}`}
-                    >
-                      🗑️
-                    </button>
+                    <div className="session-item-actions">
+                      <a
+                        href={`/api/sessions/${sess.id}/export?format=md`}
+                        download
+                        className="session-export-btn"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Baixar resumo desta conversa em Markdown"
+                        aria-label={`Baixar resumo da conversa ${sess.title}`}
+                      >
+                        📥
+                      </a>
+                      <button
+                        type="button"
+                        className="session-delete-btn"
+                        onClick={(e) => handleDelete(e, sess.id, sess.title)}
+                        title="Excluir conversa"
+                        aria-label={`Excluir conversa ${sess.title}`}
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 </div>
               )

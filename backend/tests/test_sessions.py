@@ -95,3 +95,35 @@ def test_delete_session():
     # Tenta buscar a sessão excluída
     get_res = client.get(f"/api/sessions/{session_id}")
     assert get_res.status_code == 404
+
+
+def test_export_session_markdown_and_txt():
+    # 1. Cria sessão e adiciona mensagens
+    res = client.post("/api/sessions", json={"subject": "Programação", "title": "Recursão e Árvores"})
+    session_id = res.json()["id"]
+
+    client.post(
+        "/api/chat",
+        json={"session_id": session_id, "message": "Como funciona recursão?", "subject": "Programação"},
+    )
+
+    # 2. Exporta em Markdown
+    md_res = client.get(f"/api/sessions/{session_id}/export?format=md")
+    assert md_res.status_code == 200
+    assert "text/markdown" in md_res.headers["content-type"]
+    assert "Caderno de Estudos: Recursão e Árvores" in md_res.text
+    assert "Como funciona recursão?" in md_res.text
+    assert "attachment; filename=" in md_res.headers["content-disposition"]
+
+    # 3. Exporta em TXT
+    txt_res = client.get(f"/api/sessions/{session_id}/export?format=txt")
+    assert txt_res.status_code == 200
+    assert "text/plain" in txt_res.headers["content-type"]
+    assert "CADERNO DE ESTUDOS: RECURSÃO E ÁRVORES" in txt_res.text
+    assert "Como funciona recursão?" in txt_res.text
+
+
+def test_export_nonexistent_session_returns_404():
+    res = client.get("/api/sessions/sess-inexistente-123/export")
+    assert res.status_code == 404
+

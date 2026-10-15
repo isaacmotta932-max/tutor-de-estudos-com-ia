@@ -158,8 +158,8 @@ Para ativar as respostas didáticas geradas pela IA do Google:
 
 - [x] Persistência de histórico de conversas no banco de dados SQLite (Sessões e Mensagens).
 - [x] Módulo de geração de exercícios com correção interativa (Quizzes didáticos por disciplina e nível).
-- [ ] Exportação de resumo dos estudos em Markdown ou texto simples.
-- [ ] Acompanhamento de progresso de estudo por disciplina com gráficos.
+- [x] Exportação de resumo dos estudos em Markdown ou texto simples (.md e .txt).
+- [ ] Acompanhamento de progresso de estudo por disciplina com gráficos e estatísticas.
 
 ---
 
