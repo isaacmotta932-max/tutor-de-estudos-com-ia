@@ -1,4 +1,13 @@
-import type { ChatApiResponse, HealthResponse, SessionDetail, SessionSummary, Subject } from '../types'
+import type {
+  ChatApiResponse,
+  DifficultyLevel,
+  Exercise,
+  ExerciseEvaluateResponse,
+  HealthResponse,
+  SessionDetail,
+  SessionSummary,
+  Subject,
+} from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
@@ -122,3 +131,54 @@ export async function sendChatMessage(
     throw error
   }
 }
+
+export async function generateExercise(
+  subject: string,
+  difficulty: DifficultyLevel = 'Intermediário',
+  topic?: string,
+): Promise<Exercise> {
+  const url = `${API_BASE_URL}/api/exercises/generate`
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      subject,
+      difficulty,
+      topic: topic || undefined,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Falha ao gerar exercício (status ${response.status})`)
+  }
+
+  return (await response.json()) as Exercise
+}
+
+export async function evaluateExercise(
+  exerciseId: string,
+  subject: string,
+  selectedIndex: number,
+  correctIndex: number,
+  explanation: string,
+): Promise<ExerciseEvaluateResponse> {
+  const url = `${API_BASE_URL}/api/exercises/evaluate`
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      exercise_id: exerciseId,
+      subject,
+      selected_index: selectedIndex,
+      correct_index: correctIndex,
+      explanation,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Falha ao avaliar resposta (status ${response.status})`)
+  }
+
+  return (await response.json()) as ExerciseEvaluateResponse
+}
+

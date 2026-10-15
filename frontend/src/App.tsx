@@ -16,6 +16,7 @@ import { ChatInput } from './components/ChatInput'
 import { LoadingIndicator } from './components/LoadingIndicator'
 import { ErrorAlert } from './components/ErrorAlert'
 import { SessionsSidebar } from './components/SessionsSidebar'
+import { ExerciseModule } from './components/ExerciseModule'
 import './App.css'
 
 const FALLBACK_SUBJECTS: Subject[] = [
@@ -72,6 +73,9 @@ export function App() {
   const [sessions, setSessions] = useState<SessionSummary[]>([])
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false)
+
+  // Aba ativa: Chat ou Exercícios
+  const [activeTab, setActiveTab] = useState<'chat' | 'exercises'>('chat')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -269,71 +273,96 @@ export function App() {
           onRetry={testConnection}
         />
 
-        <div className="chat-window-wrapper">
-          <div className="chat-toolbar">
-            <span className="chat-toolbar-info">
-              {currentSession ? (
-                <>
-                  Conversa: <strong>{currentSession.title}</strong> &bull; Matéria:{' '}
-                  <strong>{selectedSubject}</strong> ({messages.length}{' '}
-                  {messages.length === 1 ? 'mensagem' : 'mensagens'})
-                </>
-              ) : (
-                <>
-                  Nova conversa sobre: <strong>{selectedSubject}</strong> ({messages.length}{' '}
-                  {messages.length === 1 ? 'mensagem' : 'mensagens'})
-                </>
-              )}
-            </span>
+        {/* Barra de Navegação entre Chat e Exercícios */}
+        <div className="tab-navigation-bar">
+          <button
+            type="button"
+            className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`}
+            onClick={() => setActiveTab('chat')}
+          >
+            💬 Conversar com o Tutor
+          </button>
+          <button
+            type="button"
+            className={`tab-btn ${activeTab === 'exercises' ? 'active' : ''}`}
+            onClick={() => setActiveTab('exercises')}
+          >
+            📝 Exercícios de Fixação
+          </button>
+        </div>
 
-            <div className="chat-toolbar-actions">
-              <button
-                type="button"
-                className="new-chat-toolbar-btn"
-                onClick={handleNewSession}
-                disabled={isLoading && messages.length === 0}
-                title="Começar uma nova conversa de estudos"
-              >
-                ✨ Nova conversa
-              </button>
+        {activeTab === 'chat' ? (
+          <div className="chat-window-wrapper">
+            <div className="chat-toolbar">
+              <span className="chat-toolbar-info">
+                {currentSession ? (
+                  <>
+                    Conversa: <strong>{currentSession.title}</strong> &bull; Matéria:{' '}
+                    <strong>{selectedSubject}</strong> ({messages.length}{' '}
+                    {messages.length === 1 ? 'mensagem' : 'mensagens'})
+                  </>
+                ) : (
+                  <>
+                    Nova conversa sobre: <strong>{selectedSubject}</strong> ({messages.length}{' '}
+                    {messages.length === 1 ? 'mensagem' : 'mensagens'})
+                  </>
+                )}
+              </span>
 
-              {messages.length > 0 && (
+              <div className="chat-toolbar-actions">
                 <button
                   type="button"
-                  className="clear-chat-btn"
+                  className="new-chat-toolbar-btn"
                   onClick={handleNewSession}
-                  disabled={isLoading}
-                  title="Limpar mensagens da tela e iniciar nova"
+                  disabled={isLoading && messages.length === 0}
+                  title="Começar uma nova conversa de estudos"
                 >
-                  🗑️ Limpar
+                  ✨ Nova conversa
                 </button>
-              )}
+
+                {messages.length > 0 && (
+                  <button
+                    type="button"
+                    className="clear-chat-btn"
+                    onClick={handleNewSession}
+                    disabled={isLoading}
+                    title="Limpar mensagens da tela e iniciar nova"
+                  >
+                    🗑️ Limpar
+                  </button>
+                )}
+              </div>
             </div>
+
+            <div className="messages-scroll-area">
+              {messages.length === 0 ? (
+                <WelcomePrompt
+                  currentSubject={selectedSubject}
+                  onSelectSuggestion={(suggestion) => handleSend(suggestion)}
+                />
+              ) : (
+                messages.map((msg) => <ChatMessageBubble key={msg.id} message={msg} />)
+              )}
+
+              {isLoading && <LoadingIndicator subject={selectedSubject} />}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            <ChatInput
+              input={input}
+              onChange={setInput}
+              onSend={() => handleSend()}
+              isLoading={isLoading}
+              selectedSubject={selectedSubject}
+            />
           </div>
-
-          <div className="messages-scroll-area">
-            {messages.length === 0 ? (
-              <WelcomePrompt
-                currentSubject={selectedSubject}
-                onSelectSuggestion={(suggestion) => handleSend(suggestion)}
-              />
-            ) : (
-              messages.map((msg) => <ChatMessageBubble key={msg.id} message={msg} />)
-            )}
-
-            {isLoading && <LoadingIndicator subject={selectedSubject} />}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          <ChatInput
-            input={input}
-            onChange={setInput}
-            onSend={() => handleSend()}
-            isLoading={isLoading}
+        ) : (
+          <ExerciseModule
             selectedSubject={selectedSubject}
+            onError={(msg) => setErrorMessage(msg)}
           />
-        </div>
+        )}
       </main>
     </div>
   )

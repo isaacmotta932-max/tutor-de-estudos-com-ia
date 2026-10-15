@@ -51,6 +51,28 @@ export interface SessionDetail {
   }>
 }
 
+export type DifficultyLevel = 'Iniciante' | 'Intermediário' | 'Avançado'
+
+export interface Exercise {
+  id: string
+  subject: string
+  difficulty: DifficultyLevel
+  topic: string
+  question: string
+  options: string[]
+  correct_option_index: number
+  explanation: string
+  is_demo: boolean
+  provider: string
+}
+
+export interface ExerciseEvaluateResponse {
+  is_correct: boolean
+  feedback: string
+  explanation: string
+  score_points: number
+}
+
 export interface HealthResponse {
   status: string
   service: string
